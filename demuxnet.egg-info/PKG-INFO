@@ -1,0 +1,19 @@
+Metadata-Version: 2.1
+Name: demuxnet
+Version: 1.1.0
+Summary: Machine learning augmented sample demultiplexing of pooled single-cell RNA-seq data
+Home-page: https://github.com/paddi1990/DemuxNet
+Author: You Wu
+Author-email: wuyou1990@sjtu.edu.cn
+Classifier: Programming Language :: Python :: 3
+Classifier: License :: OSI Approved :: MIT License
+Classifier: Operating System :: OS Independent
+Requires-Python: >=3.6
+Description-Content-Type: text/markdown
+Requires-Dist: requests
+Requires-Dist: numpy
+
+## Machine learning augmented sample demultiplexing of pooled single-cell RNA-seq data
+---
+
+![GitHub release (latest SemVer)](https://img.shields.io/badge/Version-v1.1.0-yellowgreen) ![GitHub release (latest SemVer)](https://img.shields.io/badge/Language-python-yellowgreen)

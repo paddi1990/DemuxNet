@@ -21,6 +21,7 @@ setup(
         # List any required dependencies here
         "requests",
         "numpy",
+        "rpy2"
     ],
     entry_points={
         "console_scripts": [

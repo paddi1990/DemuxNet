@@ -6,13 +6,62 @@ import pandas as pd
 from typing import List
 
 
+import torch
+from torch.utils.data import Dataset
+
+
+class MyDataset(Dataset):
+    """
+    Custom Dataset class for loading paired data (features and labels) for PyTorch models.
+
+    Args:
+        x (Tensor or ndarray): The input features, typically of shape (num_samples, num_features).
+        y (Tensor or ndarray): The corresponding labels, typically of shape (num_samples,).
+
+    """
+    def __init__(self, x, y):
+        """
+        Initializes the dataset with features and labels.
+
+        Parameters:
+            x (Tensor or ndarray): The input features of the dataset.
+            y (Tensor or ndarray): The labels corresponding to each sample in the dataset.
+        """
+        self.x = x  # Store the input features
+        self.y = y  # Store the labels
+
+    def __getitem__(self, index):
+        """
+        Retrieves a sample from the dataset at a specified index.
+
+        Parameters:
+            index (int): The index of the sample to retrieve.
+
+        Returns:
+            tuple: A tuple containing the input features and corresponding label at the given index.
+                   (features, label).
+        """
+        features = self.x[index]  # Get the input features for the sample
+        label = self.y[index]     # Get the label for the sample
+        return features, label
+
+    def __len__(self):
+        """
+        Returns the total number of samples in the dataset.
+
+        Returns:
+            int: The number of samples in the dataset.
+        """
+        return len(self.x)  # Return the number of samples in the dataset (assumed equal to len(y))
+
+
 
 def read_rds(rds_file):
     """
     read rds file as DataFrame
 
     """
-        # Activate the automatic pandas conversion (useful if you convert to DataFrame)
+    # Activate the automatic pandas conversion (useful if you convert to DataFrame)
     pandas2ri.activate()
 
     # Load the RDS file in R
@@ -40,6 +89,92 @@ def read_rds(rds_file):
     else:
         print("The RDS file does not contain a dgCMatrix object.")
 
+
+
+def split_data_by_cmo_label(data):
+    """
+    Extracts CMO labels from the index, splits the data into training and test sets based on the presence 
+    of CMO labels, and returns the summary of CMO class distributions.
+
+    Args:
+        data (pd.DataFrame): The input data frame with an index containing CMO identifiers.
+
+    Returns:
+        tuple: A tuple containing:
+            - train_data (pd.DataFrame): Data frame with rows having valid CMO labels.
+            - test_data (pd.DataFrame): Data frame with rows lacking CMO labels.
+            - class_summary (pd.Series): Summary of CMO class distribution.
+    """
+    
+    # Extract the prefix (e.g., 'CMO301') from each index entry
+    class_list = data.index.str.extract(r'^(CMO\d+)', expand=False).fillna('No label')
+    #print(110,list(class_list))
+
+    # Count the occurrences of each unique "CMO" class
+    class_summary = class_list.value_counts()
+    
+    # Display the summary
+    print("Summary of CMO classes:")
+    print(class_summary)
+    
+    # Split the data into training and test sets
+    train_data = data[class_list != "No label"]
+    test_data = data[class_list == "No label"]
+    
+    print(len(train_data),len(test_data))
+
+    return train_data, test_data, class_list[class_list.str.contains("CMO")]
+
+
+
+
+def select_top_features_by_non_zero_count(data, top_n=6000):
+    """
+    Selects the top N features (columns) from the dataset based on the number of non-zero entries 
+    in each column. The function counts non-zero elements in each column and selects the top N columns 
+    with the highest counts.
+
+    Args:
+        data (pd.DataFrame): The input data frame with features as columns.
+        top_n (int): The number of top features to select based on non-zero counts. Default is 2000.
+
+    Returns:
+        pd.DataFrame: A new DataFrame containing only the top N features (columns).
+    """
+    
+    # Count non-zero elements in each column
+    non_zero_counts = (data != 0).sum(axis=0)
+    
+    # Select the top N columns with the highest non-zero counts
+    top_n_cols = non_zero_counts.nlargest(top_n).index
+    
+    # Filter the original dataframe to keep only the top N columns
+    data_top_n = data[top_n_cols]
+    
+    # Display summary of the selected columns
+    print(f"Selected top {top_n} columns based on non-zero counts:\n{data_top_n.head()}")  # Show a preview of the selected data
+    
+    return data_top_n, top_n_cols
+
+
+
+def convert_labels_to_int(index: pd.Index) -> pd.Series:
+    """
+    Convert string labels to integer labels for machine learning.
+
+    Args:
+    - index (pd.Index): Pandas Index containing string labels.
+
+    Returns:
+    - pd.Series: A pandas Series with integer labels corresponding to the input string labels.
+    """
+    # Create a mapping of unique string labels to integers
+    label_mapping = {label: idx for idx, label in enumerate(index.unique())}
+    
+    # Map the string labels to integer labels using the created mapping
+    int_labels = index.map(label_mapping)
+    
+    return int_labels,label_mapping
 
 
 

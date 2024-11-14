@@ -3,9 +3,16 @@ pyproject.toml
 setup.py
 demuxnet/__init__.py
 demuxnet/__main__.py
+demuxnet/compare_with_other_tools.ipynb
+demuxnet/main.ipynb
+demuxnet/models.py
+demuxnet/utils.py
 demuxnet.egg-info/PKG-INFO
 demuxnet.egg-info/SOURCES.txt
 demuxnet.egg-info/dependency_links.txt
 demuxnet.egg-info/entry_points.txt
 demuxnet.egg-info/requires.txt
 demuxnet.egg-info/top_level.txt
+demuxnet/__pycache__/utils.cpython-38.pyc
+dist/demuxnet-1.1.0-py3-none-any.whl
+dist/demuxnet-1.1.0.tar.gz

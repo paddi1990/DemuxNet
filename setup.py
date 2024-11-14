@@ -3,7 +3,7 @@ from setuptools import setup, find_packages
 
 setup(
     name="demuxnet",
-    version="1.1.0",
+    version="1.1.1",
     author="You Wu",
     author_email="wuyou1990@sjtu.edu.cn",
     description="Machine learning augmented sample demultiplexing of pooled single-cell RNA-seq data",

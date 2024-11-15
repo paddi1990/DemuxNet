@@ -46,7 +46,7 @@ pip install demuxnet
 ---
 
 ### Data preparation
-DemuxNet takes a sparse single-cell expression matrix in RDS format as input. For the preprocessing of your single-cell RNA expression data into the required format, you can follow the steps below::
+DemuxNet takes a sparse single-cell expression matrix in RDS format as input. For the preprocessing of your single-cell RNA expression data into the required format, you can follow the steps below:
 
 ```bash
 ************

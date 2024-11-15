@@ -33,5 +33,5 @@ setup(
             "demuxnet=demuxnet.__main__:main",
         ],
     },
-    include_package_data=True,  # Ensures MANIFEST.in is respected
+    include_package_data=True
 )

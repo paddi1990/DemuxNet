@@ -170,11 +170,12 @@ def convert_labels_to_int(index: pd.Index) -> pd.Series:
     """
     # Create a mapping of unique string labels to integers
     label_mapping = {label: idx for idx, label in enumerate(index.unique())}
-    
+    label_reverse_mapping = {idx: label for idx, label in enumerate(index.unique())}
+
     # Map the string labels to integer labels using the created mapping
     int_labels = index.map(label_mapping)
     
-    return int_labels,label_mapping
+    return int_labels,label_reverse_mapping
 
 
 

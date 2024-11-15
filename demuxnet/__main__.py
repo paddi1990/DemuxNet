@@ -11,7 +11,8 @@ from sklearn.model_selection import train_test_split as ts
 import torch.nn as nn
 import torch.optim as optim
 from torch.autograd import Variable
-
+import numpy as np
+import pandas as pd
 
 def parse_args():
     parser = argparse.ArgumentParser(description="DemuxNet: A tool for single-cell demultiplexing using DNN-based models.")
@@ -46,36 +47,36 @@ def parse_args():
 
 
 
-def main():
+def main_backup():
 
     print("DemuxNet is running!")
     args = parse_args()
 
     print("Reading input file!")
-    data=read_rds(args.input)
-    print(data.head())
+    raw_data=read_rds(args.input)
 
-    train_data, test_data, train_class_list = split_data_by_cmo_label(data)
+
+    train_data, test_data, train_class_list = split_data_by_cmo_label(raw_data)
 
     
 
     data_top_n, top_n_cols=select_top_features_by_non_zero_count(train_data,top_n=args.features)
 
     
-    train_class_list_int,label_mapping = convert_labels_to_int(train_class_list)
+    train_class_list_int,label_reverse_mapping = convert_labels_to_int(train_class_list)
 
 
     # Get the number of unique classes (unique labels)
     num_classes = train_class_list_int.nunique()
-    print(63,num_classes,train_class_list_int.unique())
+
 
     dnn_classifier=DNNClassifier(input_dim=args.features, hidden_dim=100, output_dim=num_classes)
     
     #
-    x_train,x_valiation,y_train,y_valiation = ts(data_top_n.to_numpy(),train_class_list_int.to_numpy(),test_size=0.2,random_state=0, shuffle=True)
+    x_train,x_validation,y_train,y_validation = ts(data_top_n.to_numpy(),train_class_list_int.to_numpy(),test_size=0.2,random_state=0, shuffle=True)
 
-    train_data=MyDataset(x_train,y_train)
-    train_loader=DataLoader(train_data, batch_size=32, shuffle=True)
+    train_dataset=MyDataset(x_train,y_train)
+    train_loader=DataLoader(train_dataset, batch_size=32, shuffle=True)
 
     criterion = nn.CrossEntropyLoss()
     optimizer = optim.Adam(dnn_classifier.parameters(), lr=0.001)
@@ -106,14 +107,16 @@ def main():
                 print('Training process: epoch [%d, %5d] loss: %.3f' % (epoch + 1, i + 1, running_loss / 200))
                 running_loss = 0.0
 
-    # Your main script logic here
-    data=read_rds("/home/wuyou/Projects/scRNA-seq/20230506_full_matrix.rds")
-    #print(data)
+    # Validation process
+    print("Training completed.")
+    print("Validation process:")
 
-    valiation_data=MyDataset(x_valiation,y_valiation)
-    valiation_loader=DataLoader(valiation_data, batch_size=32, shuffle=False)
-    result=[]
-    for i, data in enumerate(valiation_loader, 0):
+
+
+    validation_dataset=MyDataset(x_validation,y_validation)
+    validation_loader=DataLoader(validation_dataset, batch_size=32, shuffle=False)
+    validation_prediction=[]
+    for i, data in enumerate(validation_loader, 0):
         inputs, labels = data
 
         inputs=Variable(inputs).to(torch.float32)
@@ -121,16 +124,202 @@ def main():
         
         outputs = dnn_classifier(inputs)
         pred = list(torch.max(outputs, 1)[1].numpy())
-        result.extend(pred)
+        validation_prediction.extend(pred)
 
 
-    accuracy = accuracy_score(y_valiation,result)
+    accuracy = accuracy_score(y_validation,validation_prediction)
 
     #########
     print("Validation accuracy:\t",accuracy)
     
 
+    #Inference
     print("Inference process:")
+
+    test_dataset=MyDataset(test_data[top_n_cols].to_numpy(),np.array([0]*len(test_data[top_n_cols])))
+
+
+
+    test_loader=DataLoader(test_dataset, batch_size=32, shuffle=False)
+    test_prediction=[]
+    for i, data in enumerate(test_loader, 0):
+        inputs, labels = data
+
+        inputs=Variable(inputs).to(torch.float32)
+        labels=Variable(labels).to(torch.long)
+        
+        outputs = dnn_classifier(inputs)
+        pred = list(torch.max(outputs, 1)[1].numpy())
+        test_prediction.extend(pred)
+    
+    #convert int predictions to CMO labels
+
+    test_prediction_CMO=[label_reverse_mapping[p] for p in test_prediction]
+
+
+    prediction=pd.DataFrame(test_prediction_CMO,index=test_data.index,columns=["label"])
+    prediction["source"]=["prediction"]*len(prediction)
+    print(prediction)
+
+    train=pd.DataFrame(train_class_list,index=data_top_n.index,columns=["label"])
+    train["source"]=["annotation"]*len(train)
+    print(train)
+    
+    merged_df=pd.concat([prediction,train],ignore_index=False).reindex(raw_data.index).to_csv(args.output)
+
+
+
+def main():
+    # Print the initial message indicating that DemuxNet is running
+    print("DemuxNet is running!")
+
+    # Parse the command-line arguments
+    args = parse_args()
+
+    # Print message about reading the input file
+    print("Reading input file!")
+    raw_data = read_rds(args.input)
+
+    # Split the data based on the CMO labels (train/test split)
+    train_data, test_data, train_class_list = split_data_by_cmo_label(raw_data)
+
+    # Select top features based on non-zero counts from the training data
+    data_top_n, top_n_cols = select_top_features_by_non_zero_count(train_data, top_n=args.features)
+
+    # Convert the class labels to integer format and prepare the reverse mapping
+    train_class_list_int, label_reverse_mapping = convert_labels_to_int(train_class_list)
+
+    # Get the number of unique classes from the training labels
+    num_classes = train_class_list_int.nunique()
+
+    # Initialize the DNN classifier model with appropriate dimensions
+    dnn_classifier = DNNClassifier(input_dim=args.features, hidden_dim=100, output_dim=num_classes)
+
+    # Split the training data into training and validation sets
+    x_train, x_validation, y_train, y_validation = ts(
+        data_top_n.to_numpy(), 
+        train_class_list_int.to_numpy(),
+        test_size=0.2,
+        random_state=0,
+        shuffle=True
+    )
+
+    # Prepare the datasets and data loaders for training and validation
+    train_dataset = MyDataset(x_train, y_train)
+    train_loader = DataLoader(train_dataset, batch_size=32, shuffle=True)
+
+    # Define loss function (CrossEntropyLoss) and optimizer (Adam)
+    criterion = nn.CrossEntropyLoss()
+    optimizer = optim.Adam(dnn_classifier.parameters(), lr=0.001)
+
+    # Set the number of epochs for training
+    num_epochs = 20
+
+    # Start the training loop
+    for epoch in range(num_epochs):
+        running_loss = 0.0
+
+        for i, data in enumerate(train_loader, 0):
+            inputs, labels = data
+
+            # Convert inputs and labels to appropriate data types and move to device
+            inputs = Variable(inputs).to(torch.float32)
+            labels = Variable(labels).to(torch.long)
+
+            # Zero the gradients before backpropagation
+            optimizer.zero_grad()
+
+            # Perform forward pass and compute the loss
+            outputs = dnn_classifier(inputs)
+            loss = criterion(outputs, labels)
+
+            # Backpropagate the gradients
+            loss.backward()
+
+            # Update the model parameters
+            optimizer.step()
+
+            # Accumulate the loss for reporting
+            running_loss += loss.item()
+
+            # Print the training loss every 20 iterations
+            if i % 20 == 0:
+                print(f'Training process: epoch [{epoch+1}, {i+1:5d}] loss: {running_loss / 200:.3f}')
+                running_loss = 0.0
+
+    # Print training completion message
+    print("Training completed.")
+
+    # Validation process
+    print("Validation process:")
+
+    # Prepare validation dataset and loader
+    validation_dataset = MyDataset(x_validation, y_validation)
+    validation_loader = DataLoader(validation_dataset, batch_size=32, shuffle=False)
+
+    # Store the predictions for validation
+    validation_prediction = []
+    for i, data in enumerate(validation_loader, 0):
+        inputs, labels = data
+
+        # Convert inputs and labels to appropriate data types
+        inputs = Variable(inputs).to(torch.float32)
+        labels = Variable(labels).to(torch.long)
+
+        # Perform forward pass for validation data
+        outputs = dnn_classifier(inputs)
+        pred = list(torch.max(outputs, 1)[1].numpy())
+
+        # Append predictions to the list
+        validation_prediction.extend(pred)
+
+    # Calculate the accuracy of the validation predictions
+    accuracy = accuracy_score(y_validation, validation_prediction)
+
+    # Print the validation accuracy
+    print("Validation accuracy:", accuracy)
+
+    # Inference process
+    print("Inference process:")
+
+    # Prepare test dataset and loader for inference
+    test_dataset = MyDataset(test_data[top_n_cols].to_numpy(), np.array([0] * len(test_data[top_n_cols])))
+    test_loader = DataLoader(test_dataset, batch_size=32, shuffle=False)
+
+    # Store the predictions for test data
+    test_prediction = []
+    for i, data in enumerate(test_loader, 0):
+        inputs, labels = data
+
+        # Convert inputs and labels to appropriate data types
+        inputs = Variable(inputs).to(torch.float32)
+        labels = Variable(labels).to(torch.long)
+
+        # Perform forward pass for test data
+        outputs = dnn_classifier(inputs)
+        pred = list(torch.max(outputs, 1)[1].numpy())
+
+        # Append predictions to the list
+        test_prediction.extend(pred)
+
+    # Convert the integer predictions to CMO class labels
+    test_prediction_CMO = [label_reverse_mapping[p] for p in test_prediction]
+
+    # Create a DataFrame to store the test predictions
+    prediction = pd.DataFrame(test_prediction_CMO, index=test_data.index, columns=["label"])
+    prediction["source"] = ["prediction"] * len(prediction)
+    print(prediction)
+
+    # Create a DataFrame to store the training labels
+    train = pd.DataFrame(train_class_list, index=data_top_n.index, columns=["label"])
+    train["source"] = ["annotation"] * len(train)
+    print(train)
+
+    # Merge the predictions and training data into a single DataFrame
+    merged_df = pd.concat([prediction, train], ignore_index=False).reindex(raw_data.index)
+
+    # Save the merged DataFrame to the output file
+    merged_df.to_csv(args.output)
 
 
 

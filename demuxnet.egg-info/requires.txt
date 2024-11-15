@@ -1,3 +1,7 @@
 requests
 numpy
 rpy2
+pandas
+torch
+scikit-learn
+scipy

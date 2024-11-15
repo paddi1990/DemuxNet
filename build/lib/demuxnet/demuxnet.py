@@ -3,9 +3,9 @@
 import argparse
 
 import torch
-from demuxnet.utils import read_rds
-from demuxnet.models import DNNClassifier
-from demuxnet.utils import split_data_by_cmo_label,select_top_features_by_non_zero_count,convert_labels_to_int,MyDataset,accuracy_score
+from utils import read_rds
+from models import DNNClassifier
+from utils import split_data_by_cmo_label,select_top_features_by_non_zero_count,convert_labels_to_int,MyDataset,accuracy_score
 from torch.utils.data import DataLoader
 from sklearn.model_selection import train_test_split as ts
 import torch.nn as nn

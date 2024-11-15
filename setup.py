@@ -3,7 +3,7 @@ from setuptools import setup, find_packages
 
 setup(
     name="demuxnet",
-    version="1.1.1",
+    version="1.1.6",
     author="You Wu",
     author_email="wuyou1990@sjtu.edu.cn",
     description="Machine learning augmented sample demultiplexing of pooled single-cell RNA-seq data",
@@ -21,11 +21,17 @@ setup(
         # List any required dependencies here
         "requests",
         "numpy",
-        "rpy2"
+        "rpy2",
+        "pandas",
+        "torch",
+        "scikit-learn",
+        "scipy"
+
     ],
     entry_points={
         "console_scripts": [
             "demuxnet=demuxnet.__main__:main",
         ],
     },
+    include_package_data=True,  # Ensures MANIFEST.in is respected
 )

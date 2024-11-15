@@ -13,6 +13,12 @@ For more information, please refer to our manuscript: [******].
 
 ### Installation
 
+#### Requirements
+
+ - **Python**: Version 3.7 or higher is required to run DemuxNet.
+ - **GCC**: Version 7 or higher is required to install dependencies, ensuring compatibility with the underlying R environment.
+
+
 #### Install demuxnet from source code
 ```bash
 git clone https://github.com/paddi1990/DemuxNet.git
@@ -45,7 +51,7 @@ Once installed, DemuxNet can be run from the command line. The tool automaticall
 
 #### Command Line Usage
 
-To run Demuxnet,use the following command:
+To run Demuxnet, use the following command:
 
 ```bash
 demuxnet -i gene_expressioin_matrix.rds -model DNN -feature 6000 -out prediction.csv
@@ -88,6 +94,7 @@ DemuxNet employs a Deep Neural Network (DNN) architecture for training the model
 ### Visualization
 To do
 
+---
 ### Contact
 DemuxNet is maintained by Hu lab. For any questions or issues, please feel free to open an issue on the GitHub repository.
 If you use DemuxNet in your research, please cite *************************.

@@ -9,6 +9,7 @@ from typing import List
 import torch
 from torch.utils.data import Dataset
 
+
 class MyDataset(Dataset):
     """
     Custom Dataset class for loading paired data (features and labels) for PyTorch models.
@@ -106,20 +107,23 @@ def split_data_by_cmo_label(data):
     """
     
     # Extract the prefix (e.g., 'CMO301') from each index entry
-    data['label'] = data.index.str.extract(r'^(CMO\d+)', expand=False).fillna('No label')
-    
+    class_list = data.index.str.extract(r'^(CMO\d+)', expand=False).fillna('No label')
+    #print(110,list(class_list))
+
     # Count the occurrences of each unique "CMO" class
-    class_summary = data['label'].value_counts()
+    class_summary = class_list.value_counts()
     
     # Display the summary
     print("Summary of CMO classes:")
     print(class_summary)
     
     # Split the data into training and test sets
-    train_data = data[data["label"] != "No label"]
-    test_data = data[data["label"] == "No label"]
+    train_data = data[class_list != "No label"]
+    test_data = data[class_list == "No label"]
     
-    return train_data, test_data, class_summary
+    print(len(train_data),len(test_data))
+
+    return train_data, test_data, class_list[class_list.str.contains("CMO")]
 
 
 
@@ -153,6 +157,25 @@ def select_top_features_by_non_zero_count(data, top_n=6000):
     return data_top_n, top_n_cols
 
 
+
+def convert_labels_to_int(index: pd.Index) -> pd.Series:
+    """
+    Convert string labels to integer labels for machine learning.
+
+    Args:
+    - index (pd.Index): Pandas Index containing string labels.
+
+    Returns:
+    - pd.Series: A pandas Series with integer labels corresponding to the input string labels.
+    """
+    # Create a mapping of unique string labels to integers
+    label_mapping = {label: idx for idx, label in enumerate(index.unique())}
+    label_reverse_mapping = {idx: label for idx, label in enumerate(index.unique())}
+
+    # Map the string labels to integer labels using the created mapping
+    int_labels = index.map(label_mapping)
+    
+    return int_labels,label_reverse_mapping
 
 
 

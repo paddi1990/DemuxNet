@@ -1,4 +1,4 @@
-![[DemuxNet_Logo.png]]
+![Logo](images/logo.png)
 # DemuxNet: Machine Learning Augmented Sample Demultiplexing for scRNA-seq
 
 ![GitHub release (latest SemVer)](https://img.shields.io/badge/Version-v1.1.0-yellowgreen) ![GitHub release (latest SemVer)](https://img.shields.io/badge/Language-python-yellowgreen)
